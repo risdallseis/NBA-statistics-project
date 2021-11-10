@@ -1,0 +1,47 @@
+---
+title: "Distributions of the variables"
+output: html_notebook
+---
+```{r}
+library(ggplot2)
+
+data <- read.csv(file='nbadata.csv')
+df <- data.frame(data)
+categorical_df <- df[ ,sapply(df, is.factor)]
+categorical_df
+```
+```{r}
+ggplot(df, aes(DATE))+
+  geom_bar()
+```
+```{r}
+ggplot(df, aes(HOME_TEAM))+
+  geom_bar()
+```
+```{r}
+ggplot(df, aes(AWAY_TEAM))+
+  geom_bar()
+```
+
+
+```{r}
+ggplot(df, aes(GAME_CLOCK))+
+  geom_bar()
+
+```
+
+```{r}
+ggplot(df, aes(SHOT_RESULT))+
+  geom_bar()
+```
+```{r}
+ggplot(df, aes(CLOSEST_DEFENDER))+
+  geom_bar()
+```
+
+
+
+
+
+
+

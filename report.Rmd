@@ -1,0 +1,444 @@
+---
+title: "MAT022 NBA Report"
+author: "Rory Tisdall"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  pdf_document:
+    toc: yes
+  bookdown::pdf:
+    toc: yes
+    number_sections: yes
+    keep_tex: yes
+    fig_caption: yes
+    highlight: haddock
+    df_print: kable
+    extra_dependencies:
+      caption: labelfont={bf}
+fontsize: 11pt
+fontfamily: times
+geometry: margin=1in
+email: tisdallr@cardiff.ac.uk
+abstract: This report displays a range of descriptive and inferential statistical methods used to analyse and interpret shot data from the NBA season of 2014-15. A particular focus is taken comparing 2-point and 3-point shots, where it is obsverved that the time the ball is in a shooting players hands has an impact on determining the outcome of a 2-point shot. It is found that players are more likely to score a shot if it is taken on their home ground. Using linear regression, a relationship is found, linking the accuracy of a player's 3-point shots and the proportion of 3-point shots out of total shots taken by that player. 
+---
+
+<!-- set knitr options here -->
+
+```{r setup, include=FALSE}
+library(knitr)
+library(kableExtra)
+
+```
+
+
+
+```{r, include=FALSE}
+library(corrplot)
+library(Hmisc)
+library(pROC)
+library(car)
+library(ggpubr)
+library(MLmetrics)
+library(ggplot2)
+library(rmarkdown)
+library(dplyr, warn.conflicts = FALSE)
+library(corrplot)
+library(gridExtra)
+# Turn of warning messages
+options(dplyr.summarise.inform = FALSE)
+options(warn=-1)
+# read data
+df <- read.csv(file='nbadata.csv', header=TRUE)
+```
+
+
+
+<!-- main body starts here -->
+
+# Introduction {#sec:intro}
+The data set contains information on data of shots taken during the 2014-15 season of the National Basketball Association (NBA). The NBA is men's a professional basketball league in North America and is considered to hold the best standards of basketball performance of any league in the world. The 2014-15 season was won by the Golden State Warriors (GSW), with their player, Stephen Curry, awarded the title of season MVP. The data set consists of $128{,}069$ shots taken as observations of $23$ variables which describe various attributes of each shot taken. The variables are:
+
+
+```
+```
+
+```{r, echo = FALSE}
+noquote('Variables names:')
+print(names(df))
+```
+The data set contains shots taken from $281$ players, from all $30$ teams in the NBA. Each observation of the data set consists of information about the shot; i.e. the distance it was taken from the net, variables which describe the current state of the game at the time when the shot was taken; i.e. the game period, and general information about the game; i.e. The name of the team playing at home. This study takes a focus on the shot type, 2-point and 3-point shots. The shot type is determined by where the shot is taken in relation to the 3-point shot arc, a line that marks 23 feet and 9 inches from the net. 2-point shots are taken within the arc and 3-pointers outside, hence 3-point shots are considerably more difficult to score.
+```{r echo = FALSE}
+
+```
+
+# Comparison of 2-point and 3-point shots {#sec:shot-comparison}
+```{r echo = FALSE}
+
+```
+
+This section covers the effect of the duration that the ball is in the shooting player's hands (variable `TOUCH_TIME`) has on the outcome of scoring a shot (variable `FGM`) and the effect that playing on the home ground (variable `LOCATION`) has on the outcome of a player scoring a shot. Both of these investigations are split into 2-point and 3-point shots and any effects found are compared between the two cases. Figure 1 demonstrates that the frequency of 2-point shots is considerably higher than that of 3-point shots. When carrying-out statistical tests, an equal number of random samples are taken from both variables to keep a balanced sample size.
+```{r boxplot_pts, echo = FALSE, fig.height = 3, fig.width = 4, fig.cap = "Boxplot to show the number of 2-point and 3-point shots taken by each player.", fig.align = "center"}
+players <- filter(count(group_by(df, PLAYER_NAME), PTS_TYPE))
+boxplot <- ggplot(players, aes(x=PTS_TYPE, y=n, group=PTS_TYPE, fill=factor(PTS_TYPE))) +
+   geom_boxplot()
+boxplot <- boxplot+labs(x='Shot Type', y='Count',title='Shot Type Counts')
+boxplot + scale_fill_manual(name='Shot Type',breaks = c("2", "3"), 
+                       values=c("darkslategray2", "springgreen2")) +theme_bw()
+```
+## Touch time and shot success {#sec:shot_comp_touchtime}
+```{r echo = FALSE}
+pt2_sample <- sample_n(subset(df,PTS_TYPE==2),20000)
+pt3_sample <- sample_n(subset(df,PTS_TYPE==3),20000)
+```
+Figure 2 shows the distributions of both shot types from $20{,}000$ randomly selected samples. The mean touch time for 2-point shots is over a second greater than that for 3-point shots, this is likely due to the shooter dribbling closer to the net before the shot is taken. 
+```{r echo = FALSE}
+var_test_pval<-var.test(pt2_sample$TOUCH_TIME, pt3_sample$TOUCH_TIME, alternative = 'less', conf.level = 0.95 )$p.value
+```
+
+```{r echo = FALSE}
+noquote(sprintf('F-test to compare variances, P-value=%.4f', var_test_pval))
+```
+The results of the F-test show that the true ratio of variances between touch time for 2-point and 3-point shots is not less than $1$, therefore the variance of 2-point shots is greater. 
+```{r touchtime_dists, echo = FALSE, fig.height = 3, fig.width = 8, fig.cap = "Histograms of touch time for 2-point and 3-point shots including the mean.",fig.align = "center"}
+
+a <- ggplot(pt2_sample, aes(x=TOUCH_TIME))
+a <- a+ geom_histogram(bins = 50, color = 'darkslategray2', fill='gray')+
+  ggtitle('2 point shots')+
+  ylim(0,5000)+
+  xlim(0,5)+
+  geom_vline(xintercept = mean(pt2_sample$TOUCH_TIME), colour='black')
+
+b <- ggplot(pt3_sample, aes (x = TOUCH_TIME))
+b <- b + geom_histogram(bins =50, color = 'springgreen2', fill ='gray')+
+  ggtitle('3 point shots')+
+  ylim(0,5000)+
+  xlim(0,5)+
+  geom_vline(xintercept = mean(pt3_sample$TOUCH_TIME), colour='black')
+grid.arrange(a, b, ncol=2)
+
+```
+
+
+
+
+```
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r echo = FALSE}
+# Analysis of variance between FGM and TOUCHTIME for 2pt and 3pt.
+# Only 2pt shots df
+aov_sub_2pt <- subset(df, PTS_TYPE ==2)
+# Only 3pt shots df
+aov_sub_3pt <- subset(df, PTS_TYPE ==3)
+
+touchtime_2pt_pvals<-vector()
+touchtime_3pt_pvals<-vector()
+set.seed(42)
+# Taking sample sizes of 10,000 and recording the p-values for both tests. This is repeated 1000 times.
+for (i in seq(1000)){
+  aov_sub_2pt_random <- sample_n(aov_sub_2pt,10000)
+  touchtime_2pt_pvals[i]<- summary(aov(aov_sub_2pt_random$FGM ~ aov_sub_2pt_random$TOUCH_TIME ))[[1]][["Pr(>F)"]][[1]]
+  aov_sub_3pt_random <- sample_n(aov_sub_3pt,10000)
+  touchtime_3pt_pvals[i]<- summary(aov(aov_sub_3pt_random$FGM ~ aov_sub_3pt_random$TOUCH_TIME ))[[1]][["Pr(>F)"]][[1]]
+  
+}
+noquote(sprintf('Analysis of variances of FGM and TOUCH_TIME'))
+noquote(sprintf('AOV for 2-pt shots, P-value=%.4f', mean(touchtime_2pt_pvals)))
+noquote(sprintf('AOV for 3-pt shots, P-value=%.4f', mean(touchtime_3pt_pvals)))
+
+```
+
+
+The results of the one-way AOV test provide very strong statistical evidence that there is a relationship between touch time and shot success when attempting 2-point shots. Unlike the previous case; the null-hypothesis, there is no relationship between touch time and shot success, cannot be rejected at 99% confidence for the 3-point case. However it can be rejected at 90%, suggesting there is statistical evidence that there is a relationship between the two variables. Sample sizes of $10{,}000$ were used for AOV so normal approximation is realistic.
+```{r 2plot_touchtime_2pt, echo = FALSE, fig.height = 6, fig.width = 6, fig.cap = "Histograms of touch time with shot outcome as scored or missed for 2-point and 3-point shots.", fig.align = "center"}
+pt2_sample0 <- filter(sample_n(subset(df,PTS_TYPE==2),20000), FGM==0)
+pt2_sample1 <- filter(sample_n(subset(df,PTS_TYPE==2),20000), FGM==1)
+pt3_sample0 <- filter(sample_n(subset(df,PTS_TYPE==3),20000), FGM==0)
+pt3_sample1 <- filter(sample_n(subset(df,PTS_TYPE==3),20000), FGM==1)
+a <- ggplot(pt2_sample0, aes(x=TOUCH_TIME))
+a <- a+ geom_histogram(bins = 50, color = 'darkslategray2', fill='gray')+
+  ggtitle('2 point shots missed')+
+  ylim(0,2500)+
+  xlim(0,5)
+
+b <- ggplot(pt3_sample1, aes (x = TOUCH_TIME))
+b <- b+ geom_histogram(bins =50, color = 'darkslategray2', fill ='gray')+
+  ggtitle('2 point shots scored')+
+  ylim(0,2500)+
+  xlim(0,5)
+
+c <- ggplot(pt3_sample0, aes(x=TOUCH_TIME))
+c <- c+ geom_histogram(bins = 50, color = 'springgreen2', fill='gray')+
+  ggtitle('3 point shots missed')+
+  ylim(0,2500)+
+  xlim(0,5)
+
+d <- ggplot(pt3_sample1, aes (x = TOUCH_TIME))
+d <- d + geom_histogram(bins =50, color = 'springgreen2', fill ='gray')+
+  ggtitle('3 point shots scored')+
+  ylim(0,2500)+
+  xlim(0,5)
+grid.arrange(a,c,b,d,nrow=2, ncol=2)
+```
+The relationship between touch time and shot success with 2-point shots can be seen on figure 3, the data suggests that shots taken after 1 second are more likely to miss than those taken before and few are scored after 2.5 seconds, this could be due to defenders having more time to close down the attacker. Few shots are scored before 0.5 seconds, likely because the shot has been rushed. Both observations cannot be seen on the 3-point shot histograms, the shape of the shots missed and shots scored graphs are similar. The reason for this could be that most of the defenders are concentrated within the 3-point arc, marking other potential attackers rather than closing down an attacker who is not considered such a risk.
+```
+
+
+```
+## Location and shot success {#sec:shot_comp_loc}
+```{r echo = FALSE}
+chisq.test(df$LOCATION, df$FGM)
+```
+With a p-value of $0.004$, the null hypothesis is rejected with 99% confidence and therefore there is very strong statistical evidence of an association between playing on the home ground and the outcome of a player's shot. By splitting the data into two sets, one containing only 2-point shots and the other 3-point shots, a comparison of such an association can be made against the type of shot.
+
+```{r echo = FALSE}
+
+chi1 <- chisq.test(aov_sub_2pt$LOCATION, aov_sub_2pt$FGM)$p.value
+chi2 <-chisq.test(aov_sub_3pt$LOCATION, aov_sub_3pt$FGM)$p.value
+noquote(sprintf('Chi-Square test of LOCATION and FGM'))
+noquote(sprintf('Chi-square for 2-pt shots, P-value=%.4f', chi1))
+noquote(sprintf('Chi-square for 3-pt shots, P-value=%.4f', chi2))
+```
+With p-values below $0.05$, the null hypothesis is rejected at 95% confidence for both cases. Although by only a small amount, the p-value for 2-point shots is smaller than the p-value for 3-point shots, suggesting that the relationship of association is stronger when considering only 2-point shots rather than only 3-point shots.
+
+
+## Predicting shot outcome 
+The shot outcome is binomial and therefore logistic regression is the appropriate method to use to predict this variable. The independent variables: `LOCATION`, `PTS_TYPE` and `TOUCH_TIME` are used to predict the dependent variable `FGM`. 
+
+```{r echo = FALSE}
+# Equal number of 2-pt and 3-pt shot data to be input into the logistic regression mode;
+pt2_sample <- sample_n(subset(df,PTS_TYPE==2),20000)
+pt3_sample <- sample_n(subset(df,PTS_TYPE==3),20000)
+lr_df <- rbind(pt2_sample, pt3_sample)
+# Variables must be set to binary to be used in the model
+lr_df$PTS_TYPE[lr_df$PTS_TYPE =='2'] <-0
+lr_df$PTS_TYPE[lr_df$PTS_TYPE =='3'] <-1
+lr_df$LOCATION[lr_df$LOCATION =='A'] <-0
+lr_df$LOCATION[lr_df$LOCATION =='H'] <-1
+
+lr <- glm(FGM ~ TOUCH_TIME + LOCATION + PTS_TYPE, family = binomial(link = 'logit'), data = lr_df)
+print('Model coefficients:')
+print(lr$coefficients)
+print('Model p-values:')
+print(coef(summary(lr))[,4])
+
+```
+The coefficients suggest: a longer touch time decreases the probability of scoring a shot, the shooting player being at their home ground increases the probability of scoring a shot, and shooting a 3-point shot over a 2-point shot decreases the probability of scoring. The size of the coefficients for `TOUCH_TIME` and `LOCATION1` are very small, indicating the change in probability is also very small. The magnitude of the coefficient for `PTS_TYPE`: $-0.6$, means that there is a considerable decrease in the probability of scoring when shooting a 3-point shot, as previously seen in this report. The results of all three coefficients are strongly supported by statistical evidence, suggesting the relationships are true and not by chance.
+```{r echo = FALSE}
+
+# Creating a data frame consisting of only the variables used in the logistic regression model
+comp_df <- lr_df[,c("PTS_TYPE","TOUCH_TIME","LOCATION","FGM")]
+# Predicting shot outcome, with probabilities greater or equal to 0.5 classifying as scoring a shot, those less than 0.5 classifying as a miss.
+comp_df$predict <- ifelse(lr$fitted.values >=0.5,1,0)
+# Creating a confusion matrix by aggregating the true FGM values and the predicted FGM values
+confusion_matrix <- table(comp_df$FGM,comp_df$predict)
+rownames(confusion_matrix) <- c("True missed","True scored")
+colnames(confusion_matrix) <- c("Pred missed","Pred scored")
+# Computing F1 score using package MLmetrics
+f1_missed <- F1_Score(y_pred = comp_df$predict, y_true = comp_df$FGM, positive = "0")
+f1_scored <- F1_Score(y_pred = comp_df$predict, y_true = comp_df$FGM, positive = "1")
+
+```
+```{r echo = FALSE}
+print(confusion_matrix)
+noquote(sprintf('F1 score for missed shots = %.4f', f1_missed))
+noquote(sprintf('F1 score for scored shots = %.4f', f1_scored))
+```
+
+The model does not perform well at predicting scored shots given by the F1-score: $0.36$. The model chooses with greater favour to predict a shot as missed than as scored, hence this model is not very accurate. The main reason for this imbalance is likely due to only $49$% of 2-point and $35$% of 3-point shots are scored.
+
+
+
+
+
+# Do players with high 3-point shot accuracy tend to take a higher proportion of 3-point shots? {#sec:accuracy_proportion}
+This section takes a focus on each player in the data set, rather than each shot taken as previously. For this, a new data set has been created, having a row for each player with select variables made from aggregating the variables from the original data set. The new variables describe the following for each player: the proportion of 2-point shots taken out of all shots, the proportion of 3-point shots taken out of all shots, 2-point shot accuracy (mean `FGM` for 2-point shots) and 3-point shot accuracy (mean `FGM` for 3-point shots).
+```{r echo = FALSE}
+# Grouping by player, finding effectiveness at scoring (scores/total shots) at 2 and 3 pointers
+hp1_df <- select(df, PLAYER_NAME, PTS_TYPE, FGM, PTS, SHOT_RESULT )
+hp1_group <- hp1_df %>% group_by(PLAYER_NAME)
+# 2 Pointers
+hp1_group_2p <- hp1_group[ hp1_group$PTS_TYPE != 3,, drop=FALSE]
+hp1_group_2p <- hp1_group_2p %>% summarise(Mean_FGM_2_pointers = mean(FGM))
+# 3 Pointers
+hp1_group_3p <- hp1_group[ hp1_group$PTS_TYPE != 2,, drop=FALSE]
+hp1_group_3p <- hp1_group_3p %>% summarise(Mean_FGM_3_pointers = mean(FGM))
+# Joining both
+hp1_merged <- left_join(hp1_group_2p, hp1_group_3p, by= "PLAYER_NAME")
+# SHOTS TOTAL
+TOTAL_SHOTS <- hp1_group %>% tally
+# TOTAL 2 pointers
+TOTAL_2pointers <- count(filter(hp1_group,PTS_TYPE==2))
+# Merging 
+TOTAL_SHOTS_merged <- left_join(TOTAL_SHOTS, TOTAL_2pointers, by= "PLAYER_NAME")
+proportions <- TOTAL_SHOTS_merged %>% summarise(PLAYER_NAME=PLAYER_NAME,proportion_2pointers = n.y/n.x, TOTAL_SHOTS=n.x)
+# Final merge
+hp1_final_df <- left_join(hp1_merged, proportions, by="PLAYER_NAME")
+hp1_final_df$proportion_3pointers <- ( 1- hp1_final_df$proportion_2pointers)
+hp1_final_df <- hp1_final_df[order(-hp1_final_df$Mean_FGM_3_pointers),]
+hp1_final_df[is.na(hp1_final_df)] <-0
+
+```
+```{r echo = FALSE}
+mean_2pt_shots_taken <- mean(hp1_final_df$proportion_2pointers)
+mean_3pt_shots_taken <- mean(hp1_final_df$proportion_3pointers)
+mean_fgm_2pt <- mean(hp1_final_df$Mean_FGM_2_pointers)
+mean_fgm_3pt <- mean(hp1_final_df$Mean_FGM_3_pointers)
+
+desc_table <- data.frame(Variable_name=c('Proportion of 2-point shots', 'Proportion of 3-point shots', '2-point accuracy', '3-point accuracy'),
+                                    Mean_value=c(mean_2pt_shots_taken, mean_3pt_shots_taken, mean_fgm_2pt, mean_fgm_3pt))
+# Inspiration taken from the decathalon example report
+knitr::kable(
+  desc_table, 
+  caption = 'Mean statistics calculated from all players in the data.',
+  align = 'cc',
+  booktabs = TRUE)%>%kable_styling(latex_options = "HOLD_position") 
+```
+The values in table 1 suggest that players tend to take considerably more 2-point shots than 3-point shots, and the mean 2-point shot accuracy is considerably greater than the mean 3-point shot accuracy. These stats have led to the investigation, do players with high 3-point shot accuracy tend to take a higher proportion of 3-point shots? This will be investigated by applying least-squares regression to the variables: `proportion_3pointers` and `MEAN_FGM_3_pointers`, with each sample representing a player.
+
+
+```
+
+
+```
+
+
+ 
+```{r echo = FALSE , fig.height = 3, fig.width = 6, fig.cap = "Scatter plot of 3-point shot accuracy against the proportion of total shots as 3-point shots. Notice that there are a number of players who have not taken or scored a 3-point shot and some extreme outliers.", fig.align = "center"}
+x<-hp1_final_df$proportion_3pointers
+y<-hp1_final_df$Mean_FGM_3_pointers
+ggplot(data = hp1_final_df, aes(x,y)) +
+  geom_point()+
+  geom_smooth(method = "lm", formula = 'y ~ x')+
+  xlab('Proportion of total shots as 3-pt shots')+
+  ylab('3-point shot accuracy')+
+  ggtitle('Shot accuracy and 3-point shot proportion')+ theme_bw()
+```
+```{r echo = FALSE, fig.height = 3, fig.width = 6, fig.cap = "Scatter plot of the residuals from figure 4.", fig.align = "center" }
+hp1_lm <- lm(proportion_3pointers ~ Mean_FGM_3_pointers, data=hp1_final_df)
+plot(hp1_lm$residuals, ylab='Residuals', xlab='Player')
+
+```
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+The group of residual points corresponding to roughly the last 50 players all have a residual of $0$, while the residual values vary for the rest of the players.This tells us that the regression shows considerable heteroscedasticity, which means that the spread of variances of the residuals are not constant. These players are likely those that have never taken or scored a 3-point shot. One of the assumptions of least squares regression is that the residuals show homoscedasticity, and hence this model is not reliable.
+
+
+
+```{r echo = FALSE , fig.height = 3, fig.width = 6, fig.cap = "Scatter plot of 3-point shot accuracy against the proportion of total shots as 3-point shots. Outliers and players that have not taken or scored any 3-point shots have been removed.", fig.align = "center"}
+# Removing players which have not taken or scored any 3-pt shots.
+hp1_final_df_0<- filter(hp1_final_df, Mean_FGM_3_pointers != 0)
+hp1_final_df_0<- filter(hp1_final_df_0, proportion_3pointers!= 0)
+# Removing outliers using z-score from median
+median_prop3pt <- median(hp1_final_df_0$Mean_FGM_3_pointers)
+std_prop3t <- sd(hp1_final_df_0$Mean_FGM_3_pointers)
+hp1_final_df_0$z_score <- (hp1_final_df_0$Mean_FGM_3_pointers - median_prop3pt)/std_prop3t
+hp1_final_df_0 <- filter(hp1_final_df_0, z_score < 3, z_score > -3)
+
+
+x<-hp1_final_df_0$proportion_3pointers
+y<-hp1_final_df_0$Mean_FGM_3_pointers
+ggplot(data = hp1_final_df_0, aes(x,y)) +
+  geom_point()+
+  geom_smooth(method = "lm", formula = 'y ~ x')+
+  xlab('Proportion of total shots as 3-point shots')+
+  ylab('3-point shot accuracy')+
+  ggtitle('Shot accuracy and 3-point shot proportion without outliers')+ theme_bw()
+```
+```{r echo = FALSE , fig.height = 3, fig.width = 6, fig.cap = "Scatter plot of residuals from figure 6.", fig.align = "center"}
+hp1_lm_0 <- lm(proportion_3pointers ~ Mean_FGM_3_pointers, data=hp1_final_df_0)
+plot(hp1_lm_0$residuals, ylab='Residuals', xlab='Player')
+```
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+The effects of removing outlier players and players which did not score or take any 3-point shots can be seen from figure 7. There is no longer a large group of players with an equal residual value. The model now obeys the assumptions of least-squares regression, allowing reliable interpretation of the results.
+
+
+
+```{r echo = FALSE}
+print('Linear regression model descriptives:')
+summary(hp1_lm_0)$coefficients
+```
+```{r echo = FALSE}
+noquote(sprintf('Correlation coefficient of X and Y=%.4f', cor(x,y)))
+```
+The p-value given by the regression is  very small which allows the rejection of the null hypothesis, there is no relationship between 3-point shot accuracy and the proportion 3-point shots taken out of total shots. There is moderate positive correlation between the variables, described by the correlation coefficient: $0.4$. This model provides strong statistical evidence supporting the statement, players with higher 3-point shot accuracy are more likely to take a higher proportion of 3-point shots out of total shots than players with a lower 3-point shot accuracy. A relationship between these variables is not surprising, generally the more successful somebody is at something, the more they do that something. In the case of basketball, scoring a 3-point shot awards more points than a 2-point shot, hence they are more rewarding for the player and their team. The reason why the correlation between the two variables is not stronger could be because 3-point shots are more difficult to score than 2-point shots, causing players to choose to dribble closer to the net and take a 2-point shot, or pass to another player who is closer to the net.
+
+
+# Conclusion {#sec:conc}
+A range statistical methods have been used in this study to investigate differences between the two shot types, the relationship of other variables with the shot types and the tendency some players have to take 3-point shots over other players. The statistical methods used are: F-test, one-way ANOVA, chi-squared test, logistic regression and linear regression. The main findings of this study are: 2-point shots taken after 1 second of touch time are more likely to miss than those taken between 0.5 seconds and 1 second; this relationship was not observed for 3-point shots, players are more likely to score a shot if they are playing on their home ground, the outcome of a shot was not accurately predicted with logistic regression, players with higher 3-point shot accuracy are more likely to take a higher proportion of 3-point shots out of total shots taken than players with a lower 3-point shot accuracy; this finding is particularly interesting, and it would be beneficial to carry out further research on the matter with a larger sample size, such as data from multiple seasons of the NBA.
+

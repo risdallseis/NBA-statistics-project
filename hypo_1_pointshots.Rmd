@@ -1,0 +1,51 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+data <- read.csv(file='nbadata.csv')
+df <- data.frame(data)
+```
+
+```{r}
+# Grouping by player, finding effectiveness at scoring (scores/total shots) at 2 and 3 pointers
+hp1_df <- select(df, PLAYER_NAME, PTS_TYPE, FGM, PTS)
+hp1_group <- hp1_df %>% group_by(PLAYER_NAME)
+# 2 Pointers
+hp1_group_2p <- hp1_group[ hp1_group$PTS_TYPE != 3,, drop=FALSE]
+hp1_group_2p <- hp1_group_2p %>% summarise(Mean_FGM_2_pointers = mean(FGM))
+# 3 Pointers
+hp1_group_3p <- hp1_group[ hp1_group$PTS_TYPE != 2,, drop=FALSE]
+hp1_group_3p <- (hp1_group_3p %>% summarise(Mean_FGM_3_pointers = mean(FGM)))
+# Joining both
+hp1_merged <- left_join(hp1_group_2p, hp1_group_3p, by= "PLAYER_NAME")
+# SHOTS TOTAL
+TOTAL_SHOTS <- hp1_group %>% tally
+# TOTAL 2 pointers
+TOTAL_2pointers <- count(filter(hp1_group,PTS_TYPE==2))
+# Merging 
+TOTAL_SHOTS_merged <- left_join(TOTAL_SHOTS, TOTAL_2pointers, by= "PLAYER_NAME")
+proportions <- TOTAL_SHOTS_merged %>% summarise(PLAYER_NAME=PLAYER_NAME,proportion_2pointers = n.y/n.x, TOTAL_SHOTS=n.x)
+# Final merge
+hp1_final_df <- left_join(hp1_merged, proportions, by="PLAYER_NAME")
+hp1_final_df$proportion_3pointers <- ( 1- hp1_final_df$proportion_2pointers)
+hp1_final_df <- hp1_final_df[order(-hp1_final_df$Mean_FGM_3_pointers),]
+```
+
+```{r}
+x<-hp1_final_df$proportion_3pointers
+y<-hp1_final_df$Mean_FGM_3_pointers
+ggplot(data = hp1_final_df, aes(x,y)) +
+  geom_point()+
+  stat_smooth(method = "lm", 
+              formula = y ~ x +poly(x,2)  - 1)
+```
+
+
+
+
+
+

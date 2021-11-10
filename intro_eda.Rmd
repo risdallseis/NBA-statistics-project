@@ -1,0 +1,87 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+run chunk ctrlshftenter
+new chunk ctrlaltI
+
+```{r}
+data <- read.csv(file='nbadata.csv')
+df <- data.frame(data)
+head(data)
+```
+```{r}
+# Finding datatypes of each variable
+dtypes <- sapply(df, class)
+```
+```{r}
+categorical_df <- df[ ,sapply(df, is.factor)]
+
+```
+```{r}
+dtypes
+```
+
+
+```{r}
+library(ggplot2)
+for (var in categorical_df) {
+  ggplot(df, aes(var)) +
+    geom_bar()
+  }
+
+```
+
+```{r}
+# Finding number of unique values for each variable in the dataframe
+sapply(df, function(x) length(unique(x)))
+```
+```{r}
+library(dplyr)
+count(data,var='SHOT_NUMBER')
+```
+
+```{r}
+ggplot(data = df, mapping = aes(x = DRIBBLES)) + 
+  geom_freqpoly(mapping = aes(colour = SHOT_RESULT), binwidth = 1)+
+  xlim(0,25)
+```
+```{r}
+ggplot(data = df, mapping = aes(x =CLOSE_DEF_DIST )) + 
+  geom_freqpoly(mapping = aes(colour = SHOT_RESULT), binwidth = 1)+
+  xlim(0,25)
+```
+```{r}
+ggplot(data = df, mapping = aes(x = FINAL_MARGIN )) + 
+  geom_freqpoly(mapping = aes(colour = SHOT_RESULT), binwidth = 1)+
+  xlim(0,30)
+```
+```{r}
+ggplot(data = df, mapping = aes(x = FINAL_MARGIN )) + 
+  geom_freqpoly(mapping = aes(colour = SHOT_RESULT), binwidth = 1)+
+  xlim(-30,0)
+```
+```{r}
+ggplot(data = df, mapping = aes(x = FINAL_MARGIN )) + 
+  geom_freqpoly(mapping = aes(colour = LOCATION), binwidth = 1)+
+  xlim(0,30)
+```
+
+
+
+
+
+
+```{r}
+ggplot(data = df) +
+  geom_point(mapping = aes(x = SHOT_CLOCK, y = TOUCH_TIME), alpha=1/100)+
+  ylim(0,30)
+```
+```{r}
+ggplot(data = df, mapping = aes(x =SHOT_DIST )) + 
+  geom_freqpoly(mapping = aes(colour = LOCATION), binwidth = 2)
+```
+
+
+

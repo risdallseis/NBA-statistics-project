@@ -1,0 +1,85 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+data <- read.csv(file='nbadata.csv')
+df <- data.frame(data)
+```
+
+```{r}
+# Grouping by teams, need to combine home and away wins for each team to find total wins ect
+hp2_df <- select(df, HOME_TEAM, AWAY_TEAM, FGM, LOCATION,W,GAME_ID)
+hp2_group <- hp2_df %>% group_by(HOME_TEAM)
+hp2_group2 <- hp2_df %>% group_by(AWAY_TEAM)
+
+# Home wins
+hp2_group_homewins <- filter(hp2_group, W=="W", LOCATION=="H")
+hp2_group_homewins <- hp2_group_homewins %>% summarise( NUMBER_OF_WINS=n_distinct(GAME_ID))
+colnames(hp2_group_homewins) <- "TEAM"
+
+# Away wins
+hp2_group_awaywins <- filter(hp2_group2, W=="W", LOCATION=="A")
+hp2_group_awaywins <- hp2_group_awaywins %>% summarise( NUMBER_OF_WINS=n_distinct(GAME_ID))
+colnames(hp2_group_awaywins) <- "TEAM"
+
+# Wins merged
+hp2_wins_merged <- left_join(hp2_group_homewins, hp2_group_awaywins, by="TEAM")
+hp2_wins_merged$TOTAL_WINS <- hp2_wins_merged$NA.x + hp2_wins_merged$NA.y
+
+# Shots at home
+hp2_group_home_total_shots <- count(filter(hp2_group, W=="W", LOCATION=="H"))
+colnames(hp2_group_home_total_shots) <- "TEAM"
+hp2_group_home_success_shots <- count(filter(hp2_group, W=="W", LOCATION=="H", FGM==1))
+colnames(hp2_group_home_success_shots) <- "TEAM"
+
+# Shots at away
+hp2_group_away_total_shots <- count(filter(hp2_group2, W=="W", LOCATION=="A"))
+colnames(hp2_group_away_total_shots) <- "TEAM"
+hp2_group_away_success_shots <- count(filter(hp2_group2, W=="W", LOCATION=="A", FGM==1))
+colnames(hp2_group_away_success_shots) <- "TEAM"
+
+# Shots merged
+hp2_total_shots_merged=left_join(hp2_group_home_total_shots, hp2_group_away_total_shots, by='TEAM')
+hp2_total_shots_merged$TOTAL_SHOTS <- hp2_total_shots_merged$NA.x + hp2_total_shots_merged$NA.y
+
+hp2_success_shots_merged=left_join(hp2_group_home_success_shots, hp2_group_away_success_shots, by='TEAM')
+hp2_success_shots_merged$SUCCESS_SHOTS <- hp2_success_shots_merged$NA.x + hp2_success_shots_merged$NA.y
+
+# Final merge
+hp2_final <- left_join(hp2_wins_merged, hp2_total_shots_merged, by="TEAM")
+hp2_final <- left_join(hp2_final,hp2_success_shots_merged, by="TEAM" )
+hp2_final <- select(hp2_final, TEAM, SUCCESS_SHOTS, TOTAL_SHOTS, TOTAL_WINS)
+
+hp2_final <- hp2_final[order(-hp2_final$TOTAL_WINS),]
+```
+
+```{r}
+library(reshape2)
+hp2_top5 <- head(hp2_final,5)
+hp2_top5 <- select(hp2_top5, TOTAL_SHOTS, SUCCESS_SHOTS,TEAM)
+hp2_top10 <- head(hp2_final,10)
+hp2_top10 <- select(hp2_top10, TOTAL_SHOTS, SUCCESS_SHOTS,TEAM)
+
+hp2_top5.long <- melt(hp2_top5)
+hp2_top10.long <- melt(hp2_top10)
+
+ggplot(hp2_top5.long,aes(TEAM,value,fill=variable))+
+     geom_bar(stat="identity",position="dodge")
+```
+```{r}
+ggplot(hp2_top10.long,aes(TEAM,value,fill=variable))+
+     geom_bar(stat="identity",position="dodge")+
+      ggtitle("Teams with most wins from left to right")
+```
+
+
+```{r}
+
+```
+
+
+

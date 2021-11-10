@@ -1,0 +1,72 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+data <- read.csv(file='nbadata.csv')
+df <- data.frame(data)
+```
+
+
+```{r}
+continuous_df <- df[ ,!sapply(df, is.factor)]
+continuous_df
+```
+```{r}
+library(pastecs)
+summary_statistics <- stat.desc(continuous_df[3:14])
+summary_statistics
+
+```
+
+```{r}
+ggplot(df, aes(FINAL_MARGIN)) +
+  geom_histogram(binwidth = 0.5)
+```
+```{r}
+ggplot(df, aes(SHOT_NUMBER)) +
+  geom_histogram(binwidth = 0.5)
+```
+```{r}
+ggplot(df, aes(PERIOD)) +
+  geom_histogram(binwidth = 0.5)
+```
+```{r}
+ggplot(df, aes(SHOT_CLOCK)) +
+  geom_histogram(binwidth = 0.5)
+```
+```{r}
+ggplot(df, aes(DRIBBLES)) +
+  geom_histogram(binwidth = 0.5)
+```
+
+
+
+```{r}
+ggplot(df, aes(TOUCH_TIME)) +
+  geom_histogram(binwidth = 1)
+```
+```{r}
+ggplot(df, aes(SHOT_DIST)) +
+  geom_histogram(binwidth = 0.5)
+```
+```{r}
+ggplot(df, aes(PTS_TYPE)) +
+  geom_histogram(binwidth = 0.5)
+```
+
+```{r}
+ggplot(df, aes(CLOSE_DEF_DIST)) +
+  geom_histogram(binwidth = 0.5)
+```
+
+```{r}
+ggplot(df, aes(PTS)) +
+  geom_histogram(binwidth = 0.5)
+```
+
+```{r}
+ggplot(df, aes(FGM)) +
+  geom_histogram(binwidth = 0.5)
+```
